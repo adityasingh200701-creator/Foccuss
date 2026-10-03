@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Performance & Habit Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-body: #f4f6f9;
+      --bg-card: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --table-header-bg: #f8fafc;
+      --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    }
+
+    [data-theme="dark"] {
+      --bg-body: #0f172a;
+      --bg-card: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --table-header-bg: #0f172a;
+      --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    [data-theme="gradient"] {
+      --bg-body: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+      --bg-card: rgba(30, 41, 59, 0.75);
+      --text-main: #ffffff;
+      --text-muted: #cbd5e1;
+      --border-color: rgba(255, 255, 255, 0.15);
+      --primary: #818cf8;
+      --primary-hover: #6366f1;
+      --table-header-bg: rgba(15, 23, 42, 0.6);
+      --card-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-body);
+      background-attachment: fixed;
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    /* Top Navigation Bar */
+    .navbar {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--card-shadow);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .theme-selector {
+      display: flex;
+      background: var(--table-header-bg);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .theme-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .theme-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* Main Layout */
+    .container {
+      max-width: 1200px;
+      margin: 25px auto;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 22px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    /* Quote Banner */
+    .quote-banner {
+      border-left: 4px solid var(--primary);
+      font-style: italic;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .quote-text {
+      font-size: 1.05rem;
+      font-weight: 500;
+    }
+
+    .quote-author {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    /* Week Selector Bar */
+    .week-navigator {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .week-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-main);
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--table-header-bg);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Stats & Motivation Bar */
+    .dashboard-top-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+
+    .meter-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 15px;
+    }
+
+    .meter-emoji {
+      font-size: 3.2rem;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .meter-label {
+      font-size: 1.15rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .meter-stage-1 { color: #ef4444; } /* Red */
+    .meter-stage-2 { color: #eab308; } /* Yellow */
+    .meter-stage-3 { color: #22c55e; } /* Green */
+    .meter-stage-4 { color: #3b82f6; } /* Blue/Purple */
+
+    /* Table styling */
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      min-width: 650px;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background: var(--table-header-bg);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td:first-child, th:first-child {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .checkbox-custom {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: var(--primary);
+      border-radius: 4px;
+    }
+
+    /* Dynamic Charts Grid Layout */
+    .chart-section {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .chart-container-full {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    .side-by-side-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .chart-container-half {
+      position: relative;
+      height: 250px;
+    }
+
+    .efficiency-display-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+    }
+
+    .efficiency-number {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .add-habit-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .add-habit-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--table-header-bg);
+      color: var(--text-main);
+      outline: none;
+    }
+
+    @media (max-width: 850px) {
+      .dashboard-top-grid, .side-by-side-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="brand-title">
+        🎓 Academic Habit Tracker
+      </div>
+      <div class="nav-controls">
+        <div class="theme-selector">
+          <button class="theme-btn active" onclick="setTheme('light')">Light</button>
+          <button class="theme-btn" onclick="setTheme('dark')">Dark</button>
+          <button class="theme-btn" onclick="setTheme('gradient')">Gradient</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Motivational Quote Header -->
+    <div class="card quote-banner">
+      <div class="quote-text" id="quote-text">"Loading quote..."</div>
+      <div class="quote-author" id="quote-author"></div>
+    </div>
+
+    <!-- Week Navigation -->
+    <div class="card week-navigator">
+      <div class="week-buttons">
+        <button class="btn" onclick="changeWeek(-1)">← Previous Week</button>
+        <button class="btn" onclick="resetToCurrentWeek()">Current Week</button>
+        <button class="btn" onclick="changeWeek(1)">Next Week →</button>
+      </div>
+      <h2 style="margin:0; font-size: 1.15rem;" id="week-display-label">Week --, ----</h2>
+    </div>
+
+    <!-- Top Summary & Motivation Meter -->
+    <div class="dashboard-top-grid">
+      <!-- Quick Info -->
+      <div class="card" style="display:flex; flex-direction:column; justify-content:center; gap:12px;">
+        <h3 style="margin:0;">Weekly Progress Summary</h3>
+        <p style="margin:0; color:var(--text-muted);" id="week-summary-text">
+          Select check-boxes to calculate your performance metrics across parameters.
+        </p>
+      </div>
+
+      <!-- Motivation Meter Stage Badge -->
+      <div class="card meter-card">
+        <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight:700; margin-bottom: 5px;">Motivation Meter</span>
+        <div class="meter-emoji" id="meter-emoji">😶</div>
+        <div class="meter-label" id="meter-label">Calculating...</div>
+      </div>
+    </div>
+
+    <!-- Main Interactive Checklist Table -->
+    <div class="card">
+      <h3 style="margin-top:0;">Academic Parameters Checklist</h3>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Academic Parameter</th>
+              <th>Mon</th>
+              <th>Tue</th>
+              <th>Wed</th>
+              <th>Thu</th>
+              <th>Fri</th>
+              <th>Sat</th>
+              <th>Sun</th>
+              <th>Completion</th>
+            </tr>
+          </thead>
+          <tbody id="habit-table-body">
+            <!-- Dynamic Checkboxes -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="add-habit-row">
+        <input type="text" id="new-parameter-input" placeholder="Add custom parameter (e.g. Thesis Writing, Math Problem Sets)...">
+        <button class="btn btn-primary" onclick="addNewParameter()">Add Parameter</button>
+      </div>
+    </div>
+
+    <!-- Full Width Graph -->
+    <div class="card">
+      <h3 style="margin-top:0;">Daily Completion Trend (Full Width)</h3>
+      <div class="chart-container-full">
+        <canvas id="fullLineChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Side-by-Side Analytics: Pie Chart & Efficiency Gauges -->
+    <div class="side-by-side-grid">
+      <div class="card">
+        <h3 style="margin-top:0;">Parameter Distribution</h3>
+        <div class="chart-container-half">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Overall Weekly Efficiency</h3>
+        <div class="efficiency-display-box">
+          <div class="efficiency-number" id="efficiency-percent">0%</div>
+          <p style="color:var(--text-muted); margin: 5px 0 0 0;">Total Academic Target Completion</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Motivational Quotes Pool (Max 5 quotes for space efficiency) ---
+    const quotes = [
+      { quote: "Success isn't always about greatness. It's about consistency. Consistent hard work leads to success.", author: "Dwayne Johnson" },
+      { quote: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+      { quote: "Focus on being productive instead of busy.", author: "Tim Ferriss" },
+      { quote: "Small daily improvements over time lead to stunning results.", author: "Robin Sharma" },
+      { quote: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" }
+    ];
+
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const defaultParameters = [
+      "Study / Core Reading",
+      "Revision & Flashcards",
+      "Assignments & Homework",
+      "Exam & Test Practice",
+      "Skill & Lab Work"
+    ];
+
+    // State Variables
+    let currentWeekOffset = 0;
+    let fullLineChartInstance = null;
+    let pieChartInstance = null;
+
+    // Local Storage Keys
+    const STORAGE_KEY_DATA = 'academic_tracker_multiweek_v2';
+    const STORAGE_KEY_THEME = 'academic_tracker_theme';
+
+    // --- Helper Functions for ISO Week Keys ---
+    function getWeekKey(offset = 0) {
+      const date = new Date();
+      date.setDate(date.getDate() + (offset * 7));
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+      return `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+    }
+
+    function getAllData() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY_DATA)) || {};
+    }
+
+    function saveAllData(data) {
+      localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(data));
+    }
+
+    function getCurrentWeekData() {
+      const weekKey = getWeekKey(currentWeekOffset);
+      const allData = getAllData();
+
+      if (!allData[weekKey]) {
+        // Initialize new week with parameters
+        let paramsList = defaultParameters;
+        // Carry forward parameter names from any previous week if present
+        const keys = Object.keys(allData);
+        if (keys.length > 0) {
+          paramsList = allData[keys[keys.length - 1]].map(item => item.name);
+        }
+
+        allData[weekKey] = paramsList.map(name => ({
+          name: name,
+          checks: [false, false, false, false, false, false, false]
+        }));
+        saveAllData(allData);
+      }
+      return allData[weekKey];
+    }
+
+    // --- Core UI Renderer ---
+    function renderApp() {
+      const weekKey = getWeekKey(currentWeekOffset);
+      document.getElementById('week-display-label').textContent = `Week: ${weekKey}`;
+
+      const weekData = getCurrentWeekData();
+      renderTable(weekData);
+      updateAnalytics(weekData);
+    }
+
+    function renderTable(weekData) {
+      const tbody = document.getElementById('habit-table-body');
+      tbody.innerHTML = '';
+
+      weekData.forEach((item, pIdx) => {
+        const tr = document.createElement('tr');
+
+        const nameTd = document.createElement('td');
+        nameTd.textContent = item.name;
+        tr.appendChild(nameTd);
+
+        let checkedCount = 0;
+        item.checks.forEach((isChecked, dIdx) => {
+          if (isChecked) checkedCount++;
+          const td = document.createElement('td');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'checkbox-custom';
+          cb.checked = isChecked;
+          cb.onchange = () => toggleCheck(pIdx, dIdx);
+          td.appendChild(cb);
+          tr.appendChild(td);
+        });
+
+        const pct = Math.round((checkedCount / 7) * 100);
+        const pctTd = document.createElement('td');
+        pctTd.textContent = `${pct}%`;
+        pctTd.style.fontWeight = '700';
+        pctTd.style.color = pct >= 75 ? '#22c55e' : (pct >= 50 ? '#eab308' : '#ef4444');
+        tr.appendChild(pctTd);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleCheck(pIdx, dIdx) {
+      const weekKey = getWeekKey(currentWeekOffset);
+      const allData = getAllData();
+      allData[weekKey][pIdx].checks[dIdx] = !allData[weekKey][pIdx].checks[dIdx];
+      saveAllData(allData);
+      renderApp();
+    }
+
+    function addNewParameter() {
+      const input = document.getElementById('new-parameter-input');
+      const val = input.value.trim();
+      if (!val) return;
+
+      const weekKey = getWeekKey(currentWeekOffset);
+      const allData = getAllData();
+
+      allData[weekKey].push({
+        name: val,
+        checks: [false, false, false, false, false, false, false]
+      });
+
+      saveAllData(allData);
+      input.value = '';
+      renderApp();
+    }
+
+    function changeWeek(direction) {
+      currentWeekOffset += direction;
+      renderApp();
+    }
+
+    function resetToCurrentWeek() {
+      currentWeekOffset = 0;
+      renderApp();
+    }
+
+    // --- Analytics Engine ---
+    function updateAnalytics(weekData) {
+      const totalPossible = weekData.length * 7;
+      let totalChecked = 0;
+
+      const parameterTotals = weekData.map(item => {
+        const c = item.checks.filter(Boolean).length;
+        totalChecked += c;
+        return c;
+      });
+
+      const efficiency = totalPossible > 0 ? (totalChecked / totalPossible) * 100 : 0;
+      const efficiencyRounded = Math.round(efficiency);
+
+      // Update Efficiency UI
+      document.getElementById('efficiency-percent').textContent = `${efficiencyRounded}%`;
+      document.getElementById('week-summary-text').textContent = 
+        `You have logged ${totalChecked} check-ins out of ${totalPossible} possible study targets for ${getWeekKey(currentWeekOffset)}.`;
+
+      // Update Motivation Meter
+      updateMotivationMeter(efficiency);
+
+      // Update Charts
+      const dailyTotals = days.map((_, dIdx) => {
+        return weekData.reduce((acc, item) => acc + (item.checks[dIdx] ? 1 : 0), 0);
+      });
+
+      renderFullLineChart(days, dailyTotals);
+      renderPieChart(weekData.map(item => item.name), parameterTotals);
+    }
+
+    function updateMotivationMeter(efficiency) {
+      const emojiEl = document.getElementById('meter-emoji');
+      const labelEl = document.getElementById('meter-label');
+
+      labelEl.className = 'meter-label ';
+
+      if (efficiency < 60) {
+        emojiEl.textContent = '😞';
+        labelEl.textContent = 'Not expected';
+        labelEl.classList.add('meter-stage-1');
+      } else if (efficiency >= 60 && efficiency < 70) {
+        emojiEl.textContent = '😊';
+        labelEl.textContent = 'Good Enough';
+        labelEl.classList.add('meter-stage-2');
+      } else if (efficiency >= 70 && efficiency < 80) {
+        emojiEl.textContent = '😄';
+        labelEl.textContent = 'Keep It Up';
+        labelEl.classList.add('meter-stage-3');
+      } else {
+        emojiEl.textContent = '🤩';
+        labelEl.textContent = 'Marvellous';
+        labelEl.classList.add('meter-stage-4');
+      }
+    }
+
+    // --- Chart JS Renderers ---
+    function getChartTextColor() {
+      const theme = document.documentElement.getAttribute('data-theme');
+      return (theme === 'dark' || theme === 'gradient') ? '#f8fafc' : '#334155';
+    }
+
+    function renderFullLineChart(labels, data) {
+      const ctx = document.getElementById('fullLineChart').getContext('2d');
+      if (fullLineChartInstance) fullLineChartInstance.destroy();
+
+      const textColor = getChartTextColor();
+
+      fullLineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Daily Completed Items',
+            data: data,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 5,
+            pointBackgroundColor: '#3b82f6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: textColor } }
+          },
+          scales: {
+            x: { ticks: { color: textColor }, grid: { display: false } },
+            y: { ticks: { color: textColor, stepSize: 1 }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function renderPieChart(labels, data) {
+      const ctx = document.getElementById('pieChart').getContext('2d');
+      if (pieChartInstance) pieChartInstance.destroy();
+
+      const textColor = getChartTextColor();
+
+      pieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: [
+              '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#14b8a6', '#f97316'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: textColor } }
+          }
+        }
+      });
+    }
+
+    // --- Theme Selector ---
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(STORAGE_KEY_THEME, theme);
+
+      // Highlight active theme button
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === theme);
+      });
+
+      // Refresh Chart Colors
+      renderApp();
+    }
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem(STORAGE_KEY_THEME) || 'light';
+      setTheme(savedTheme);
+    }
+
+    // --- Random Welcome Quote Picker ---
+    function initQuote() {
+      const randomIdx = Math.floor(Math.random() * quotes.length);
+      const q = quotes[randomIdx];
+      document.getElementById('quote-text').textContent = `"${q.quote}"`;
+      document.getElementById('quote-author').textContent = `— ${q.author}`;
+    }
+
+    // Initialize Dashboard
+    window.onload = function() {
+      initTheme();
+      initQuote();
+      renderApp();
+    };
+  </script>
+</body>
+</html>
